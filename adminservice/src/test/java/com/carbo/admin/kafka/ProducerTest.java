@@ -1,0 +1,80 @@
+package com.carbo.admin.kafka;
+import static org.mockito.ArgumentMatchers.any;
+
+import java.io.*;
+import java.nio.file.*;
+import java.security.Principal;
+import java.util.*;
+import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.http.HttpStatus;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.mockito.MockitoAnnotations.openMocks;
+
+
+
+
+
+@ExtendWith(MockitoExtension.class)
+class ProducerTest {
+
+    @Mock
+    private KafkaTemplate<String, Object> kafkaTemplate;
+
+    @InjectMocks
+    private Producer producer;
+
+    @BeforeEach
+    void setUp() {
+        // No additional setup required
+    }
+
+    @Test
+    void testPush_Success() {
+        String topic = "test-topic";
+        Object value = "test-value";
+
+        doNothing().when(kafkaTemplate).send(topic, value);
+        
+        producer.push(topic, value);
+        
+        verify(kafkaTemplate).send(topic, value);
+    }
+
+    @Test
+    void testPush_ErrorHandling() {
+        String topic = "test-topic";
+        Object value = "test-value";
+
+        // Simulate an exception when sending the message
+        when(kafkaTemplate.send(any(String.class), any(Object.class))).thenThrow(new RuntimeException("Kafka error"));
+
+        producer.push(topic, value);
+        
+        // Verify that the send method was called even when an exception occurred
+        verify(kafkaTemplate).send(topic, value);
+    }
+}
