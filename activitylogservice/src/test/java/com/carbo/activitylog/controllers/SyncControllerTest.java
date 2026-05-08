@@ -57,48 +57,129 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 
-
 @WebMvcTest(SyncController.class)
 class SyncControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Mock
     private ActivityLogService activityLogService;
 
-    @MockBean
+    @Mock
     private DeletedActivityLogService deletedActivityLogService;
 
-    @MockBean
-    private ModelMapper modelMapper;
+    @InjectMocks
+    private SyncController syncController;
 
-    private HttpServletRequest request;
+    private MockHttpServletRequest request;
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         request = new MockHttpServletRequest();
     }
 
     @Test
-    void view_HappyPath_ShouldReturn200() throws Exception {
-        String jobId = "testJobId";
+    void testView_HappyPath() throws Exception {
+        String jobId = "job123";
+        String organizationId = "org123";
+        request.addHeader("OrganizationId", organizationId);
+
         ActivityLogEntry entry = new ActivityLogEntry();
-        entry.setId("entryId");
-        entry.setTs(123456789L);
+        entry.setId("entry123");
+        entry.setTs(System.currentTimeMillis());
 
-        when(activityLogService.findByOrganizationIdAndJobId(any(String.class), any(String.class)))
-                .thenReturn(Collections.singletonList(entry));
+        when(activityLogService.findByOrganizationIdAndJobId(organizationId, jobId)).thenReturn(Collections.singletonList(entry));
 
-        mockMvc.perform(get("/v1/sync/view?jobId=" + jobId)
-                .requestAttr("organizationId", "orgId"))
+        mockMvc.perform(get("/v1/sync/view")
+                .param("jobId", jobId)
+                .servletRequest(request))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.entryId").value("entryId"))
-                .andExpect(jsonPath("$.ts").value(123456789L));
+                .andExpect(jsonPath("$.entry123").exists())
+                .andExpect(jsonPath("$.entry123").value(entry.getTs()));
 
-        verify(activityLogService).findByOrganizationIdAndJobId(any(String.class), eq(jobId));
+        verify(activityLogService, times(1)).findByOrganizationIdAndJobId(organizationId, jobId);
     }
 
+    @Test
+    void testSync_HappyPath() throws Exception {
+        String jobId = "job123";
+        String organizationId = "org123";
+        request.addHeader("OrganizationId", organizationId);
 
+        SyncRequest<ActivityLogEntry> syncRequest = new SyncRequest<>();
+        List<ActivityLogEntry> updates = new ArrayList<>();
+        ActivityLogEntry entry = new ActivityLogEntry();
+        entry.setId("entry123");
+        updates.add(entry);
+        syncRequest.setUpdate(updates);
 
+        Map<String, Long> updatedMap = new HashMap<>();
+        updatedMap.put(entry.getId(), System.currentTimeMillis());
+
+        when(activityLogService.findByOrganizationIdAndJobId(organizationId, jobId)).thenReturn(Collections.emptyList());
+        when(activityLogService.saveActivityLog(any(ActivityLogEntry.class))).thenReturn(entry);
+        
+        mockMvc.perform(post("/v1/sync/sync")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"update\":[{\"id\":\"entry123\", \"ts\":123456}]}") // JSON representation of SyncRequest
+                .servletRequest(request))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updated").exists())
+                .andExpect(jsonPath("$.updated.entry123").value(updatedMap.get(entry.getId())));
+
+        verify(activityLogService, times(1)).saveActivityLog(any(ActivityLogEntry.class));
+    }
+
+    @Test
+    void testSync_BadRequest_DuplicateKey() throws Exception {
+        String jobId = "job123";
+        String organizationId = "org123";
+        request.addHeader("OrganizationId", organizationId);
+
+        SyncRequest<ActivityLogEntry> syncRequest = new SyncRequest<>();
+        List<ActivityLogEntry> updates = new ArrayList<>();
+        ActivityLogEntry entry = new ActivityLogEntry();
+        entry.setId("entry123");
+        updates.add(entry);
+        syncRequest.setUpdate(updates);
+
+        when(activityLogService.findByOrganizationIdAndJobId(organizationId, jobId)).thenReturn(Collections.emptyList());
+        when(activityLogService.saveActivityLog(any(ActivityLogEntry.class))).thenThrow(new DuplicateKeyException("Duplicate key"));
+
+        mockMvc.perform(post("/v1/sync/sync")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"update\":[{\"id\":\"entry123\", \"ts\":123456}]}") // JSON representation of SyncRequest
+                .servletRequest(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString(Constants.DUPLICATE_RECORD_FOUND)));
+
+        verify(activityLogService, times(1)).saveActivityLog(any(ActivityLogEntry.class));
+    }
+
+    @Test
+    void testSync_InternalServerError() throws Exception {
+        String jobId = "job123";
+        String organizationId = "org123";
+        request.addHeader("OrganizationId", organizationId);
+
+        SyncRequest<ActivityLogEntry> syncRequest = new SyncRequest<>();
+        List<ActivityLogEntry> updates = new ArrayList<>();
+        ActivityLogEntry entry = new ActivityLogEntry();
+        updates.add(entry);
+        syncRequest.setUpdate(updates);
+
+        when(activityLogService.findByOrganizationIdAndJobId(organizationId, jobId)).thenReturn(Collections.emptyList());
+        when(activityLogService.saveActivityLog(any(ActivityLogEntry.class))).thenThrow(new RuntimeException("Internal server error"));
+
+        mockMvc.perform(post("/v1/sync/sync")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"update\":[{\"id\":\"entry123\", \"ts\":123456}]}") // JSON representation of SyncRequest
+                .servletRequest(request))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string(containsString(Constants.ERROR_WHILE_CREATE_OR_UPDATE)));
+
+        verify(activityLogService, times(1)).saveActivityLog(any(ActivityLogEntry.class));
+    }
 }

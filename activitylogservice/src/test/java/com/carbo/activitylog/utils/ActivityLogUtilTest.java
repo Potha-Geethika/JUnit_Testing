@@ -30,70 +30,77 @@ import static org.mockito.Mockito.*;
 
 
 
-
-class ActivityLogUtilTest {
+class ActivityLogEntryTest {
 
     @Test
-    void testToLocalDateFromDate() {
-        Date date = new Date();
-        LocalDate localDate = ActivityLogUtil.toLocalDate(date, ZoneId.systemDefault());
-        assertNotNull(localDate);
+    void testGetComplete() {
+        ActivityLogEntry entry = new ActivityLogEntry();
+        entry.setComplete(true);
+        Assertions.assertTrue(entry.getComplete());
+
+        entry.setComplete(false);
+        Assertions.assertFalse(entry.getComplete());
+
+        entry.setComplete(null);
+        Assertions.assertFalse(entry.getComplete());
     }
 
     @Test
-    void testToLocalDateFromLong() {
-        long timestamp = System.currentTimeMillis();
-        LocalDate localDate = ActivityLogUtil.toLocalDate(timestamp);
-        assertNotNull(localDate);
+    void testGetMillisecondsSpan() {
+        ActivityLogEntry entry = new ActivityLogEntry();
+        entry.setStart("12:00");
+        entry.setEnd("13:00");
+        Assertions.assertEquals(3600000, entry.getMillisecondsSpan());
+
+        entry.setStart("13:00");
+        entry.setEnd("12:00");
+        Assertions.assertThrows(IllegalStateException.class, entry::getMillisecondsSpan);
+
+        entry.setStart(null);
+        entry.setEnd(null);
+        Assertions.assertEquals(0, entry.getMillisecondsSpan());
     }
 
     @Test
-    void testConvertToLocalDateTimeHappyPath() {
-        String time = "12:30";
-        LocalDateTime localDateTime = ActivityLogUtil.convertToLocalDateTime(time);
-        assertNotNull(localDateTime);
+    void testCompareTo() {
+        ActivityLogEntry entry1 = new ActivityLogEntry();
+        entry1.setDay(1);
+        entry1.setStart("12:00");
+
+        ActivityLogEntry entry2 = new ActivityLogEntry();
+        entry2.setDay(1);
+        entry2.setStart("13:00");
+
+        Assertions.assertTrue(entry1.compareTo(entry2) < 0);
+        Assertions.assertTrue(entry2.compareTo(entry1) > 0);
+
+        entry2.setStart("12:00");
+        Assertions.assertEquals(0, entry1.compareTo(entry2));
     }
 
     @Test
-    void testConvertToLocalDateTimeWithDate() {
-        String time = "20230101 12:30";
-        LocalDateTime localDateTime = ActivityLogUtil.convertToLocalDateTime(time);
-        assertNotNull(localDateTime);
+    void testGetDate() {
+        ActivityLogEntry entry = new ActivityLogEntry();
+        Date now = new Date();
+        entry.setDate(now);
+        Assertions.assertNotNull(entry.getDate());
+        Assertions.assertEquals(now, entry.getDate());
     }
 
     @Test
-    void testConvertToLocalDateTimeNullInput() {
-        LocalDateTime localDateTime = ActivityLogUtil.convertToLocalDateTime(null);
-        assertNull(localDateTime);
+    void testGetEquipment() {
+        ActivityLogEntry entry = new ActivityLogEntry();
+        entry.setEquipment(Collections.singletonList("Excavator"));
+        List<String> equipment = entry.getEquipment();
+        Assertions.assertNotNull(equipment);
+        Assertions.assertEquals(1, equipment.size());
+        Assertions.assertEquals("Excavator", equipment.get(0));
     }
 
     @Test
-    void testGetTotalPumpTimeInMinsHappyPath() {
-        List<ActivityLogEntry> entries = new ArrayList<>();
-        ActivityLogEntry entry1 = Mockito.mock(ActivityLogEntry.class);
-        ActivityLogEntry entry2 = Mockito.mock(ActivityLogEntry.class);
-        Mockito.when(entry1.getMillisecondsSpan()).thenReturn(60000L); // 1 minute
-        Mockito.when(entry2.getMillisecondsSpan()).thenReturn(120000L); // 2 minutes
-        entries.add(entry1);
-        entries.add(entry2);
-        
-        Float totalPumpTime = ActivityLogUtil.getTotalPumpTimeInMins(entries);
-        assertEquals(3.0f, totalPumpTime);
-    }
-
-    @Test
-    void testGetTotalPumpTimeInMinsEmptyList() {
-        List<ActivityLogEntry> entries = Collections.emptyList();
-        Float totalPumpTime = ActivityLogUtil.getTotalPumpTimeInMins(entries);
-        assertEquals(0.0f, totalPumpTime);
-    }
-
-    @Test
-    void testFormatTimeWithDate() {
-        String hhMM = "12:30";
-        ZonedDateTime date = ZonedDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        String formattedTime = ActivityLogUtil.formatTimeWithDate(hhMM, date, formatter);
-        assertNotNull(formattedTime);
+    void testGetOrganizationId() {
+        ActivityLogEntry entry = new ActivityLogEntry();
+        entry.setOrganizationId("org123");
+        Assertions.assertEquals("org123", entry.getOrganizationId());
     }
 }

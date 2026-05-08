@@ -60,71 +60,121 @@ class DeletedActivityLogServiceTest {
         activityLogEntry.setWell("well1");
         activityLogEntry.setStage(1.0f);
         activityLogEntry.setOrganizationId("org1");
+        activityLogEntry.setDay(1);
     }
 
     @Test
-    void testGetByOrganizationId() {
-        String organizationId = "org1";
-        when(deletedActivityLogMongoDbRepository.findByOrganizationId(organizationId)).thenReturn(Collections.singletonList(activityLogEntry));
+    void testGetByOrganizationId_HappyPath() {
+        when(deletedActivityLogMongoDbRepository.findByOrganizationId("org1"))
+            .thenReturn(Collections.singletonList(activityLogEntry));
 
-        List<DeletedActivityLogEntry> result = deletedActivityLogService.getByOrganizationId(organizationId);
+        List<DeletedActivityLogEntry> result = deletedActivityLogService.getByOrganizationId("org1");
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(activityLogEntry.getId(), result.get(0).getId());
+        assertEquals("1", result.get(0).getId());
     }
 
     @Test
-    void testGetActivityLog() {
-        String activityLogId = "1";
-        when(deletedActivityLogMongoDbRepository.findById(activityLogId)).thenReturn(Optional.of(activityLogEntry));
+    void testGetByOrganizationId_EmptyList() {
+        when(deletedActivityLogMongoDbRepository.findByOrganizationId("org2"))
+            .thenReturn(Collections.emptyList());
 
-        Optional<DeletedActivityLogEntry> result = deletedActivityLogService.getActivityLog(activityLogId);
+        List<DeletedActivityLogEntry> result = deletedActivityLogService.getByOrganizationId("org2");
 
         assertNotNull(result);
-        assertEquals(activityLogEntry.getId(), result.get().getId());
+        assertEquals(0, result.size());
     }
 
     @Test
-    void testFindByOrganizationIdAndJobId() {
-        String organizationId = "org1";
-        String jobId = "job1";
-        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobId(organizationId, jobId)).thenReturn(Collections.singletonList(activityLogEntry));
+    void testGetActivityLog_HappyPath() {
+        when(deletedActivityLogMongoDbRepository.findById("1"))
+            .thenReturn(Optional.of(activityLogEntry));
 
-        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobId(organizationId, jobId);
+        Optional<DeletedActivityLogEntry> result = deletedActivityLogService.getActivityLog("1");
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(activityLogEntry.getId(), result.get(0).getId());
+        assertEquals("1", result.get().getId());
     }
 
     @Test
-    void testFindByOrganizationIdAndJobIdAndWellAndStage() {
-        String organizationId = "org1";
-        String jobId = "job1";
-        String well = "well1";
-        Float stage = 1.0f;
-        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobIdAndWellAndStage(organizationId, jobId, well, stage)).thenReturn(Collections.singletonList(activityLogEntry));
+    void testGetActivityLog_NotFound() {
+        when(deletedActivityLogMongoDbRepository.findById("2"))
+            .thenReturn(Optional.empty());
 
-        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobIdAndWellAndStage(organizationId, jobId, well, stage);
+        Optional<DeletedActivityLogEntry> result = deletedActivityLogService.getActivityLog("2");
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(activityLogEntry.getId(), result.get(0).getId());
+        assertEquals(Optional.empty(), result);
     }
 
     @Test
-    void testFindByOrganizationIdAndJobIdAndDay() {
-        String organizationId = "org1";
-        String jobId = "job1";
-        Integer day = 1;
-        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobIdAndDay(organizationId, jobId, day)).thenReturn(Collections.singletonList(activityLogEntry));
+    void testFindByOrganizationIdAndJobId_HappyPath() {
+        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobId("org1", "job1"))
+            .thenReturn(Collections.singletonList(activityLogEntry));
 
-        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobIdAndDay(organizationId, jobId, day);
+        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobId("org1", "job1");
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(activityLogEntry.getId(), result.get(0).getId());
+        assertEquals("1", result.get(0).getId());
+    }
+
+    @Test
+    void testFindByOrganizationIdAndJobId_EmptyList() {
+        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobId("org1", "job2"))
+            .thenReturn(Collections.emptyList());
+
+        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobId("org1", "job2");
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testFindByOrganizationIdAndJobIdAndWellAndStage_HappyPath() {
+        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobIdAndWellAndStage("org1", "job1", "well1", 1.0f))
+            .thenReturn(Collections.singletonList(activityLogEntry));
+
+        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobIdAndWellAndStage("org1", "job1", "well1", 1.0f);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("1", result.get(0).getId());
+    }
+
+    @Test
+    void testFindByOrganizationIdAndJobIdAndWellAndStage_EmptyList() {
+        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobIdAndWellAndStage("org1", "job1", "well2", 1.0f))
+            .thenReturn(Collections.emptyList());
+
+        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobIdAndWellAndStage("org1", "job1", "well2", 1.0f);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testFindByOrganizationIdAndJobIdAndDay_HappyPath() {
+        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobIdAndDay("org1", "job1", 1))
+            .thenReturn(Collections.singletonList(activityLogEntry));
+
+        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobIdAndDay("org1", "job1", 1);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("1", result.get(0).getId());
+    }
+
+    @Test
+    void testFindByOrganizationIdAndJobIdAndDay_EmptyList() {
+        when(deletedActivityLogMongoDbRepository.findByOrganizationIdAndJobIdAndDay("org1", "job1", 2))
+            .thenReturn(Collections.emptyList());
+
+        List<DeletedActivityLogEntry> result = deletedActivityLogService.findByOrganizationIdAndJobIdAndDay("org1", "job1", 2);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
     }
 
     @Test
@@ -134,7 +184,7 @@ class DeletedActivityLogServiceTest {
         DeletedActivityLogEntry result = deletedActivityLogService.saveActivityLog(activityLogEntry);
 
         assertNotNull(result);
-        assertEquals(activityLogEntry.getId(), result.getId());
+        assertEquals("1", result.getId());
     }
 
     @Test
@@ -148,11 +198,10 @@ class DeletedActivityLogServiceTest {
 
     @Test
     void testDeleteActivityLog() {
-        String activityLogId = "1";
-        doNothing().when(deletedActivityLogMongoDbRepository).deleteById(activityLogId);
+        doNothing().when(deletedActivityLogMongoDbRepository).deleteById("1");
 
-        deletedActivityLogService.deleteActivityLog(activityLogId);
+        deletedActivityLogService.deleteActivityLog("1");
 
-        verify(deletedActivityLogMongoDbRepository, times(1)).deleteById(activityLogId);
+        verify(deletedActivityLogMongoDbRepository, times(1)).deleteById("1");
     }
 }

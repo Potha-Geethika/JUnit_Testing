@@ -41,74 +41,82 @@ import static org.mockito.MockitoAnnotations.openMocks;
 public class CommonUtilsTest {
 
     @Test
-    void testResolveTimeZone_WithValidTimeZone() {
+    void resolveTimeZone_WithValidTimeZoneHeader_ShouldReturnCorrectZoneId() {
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
         Mockito.when(request.getHeader("Time-Zone")).thenReturn("America/New_York");
-        
+
         ZoneId result = CommonUtils.resolveTimeZone(request);
-        
+
         Assertions.assertNotNull(result);
         Assertions.assertEquals("America/New_York", result.getId());
     }
 
     @Test
-    void testResolveTimeZone_WithInvalidTimeZone() {
+    void resolveTimeZone_WithInvalidTimeZoneHeader_ShouldReturnDefaultZoneId() {
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
-        Mockito.when(request.getHeader("Time-Zone")).thenReturn("Invalid/Zone");
-        
+        Mockito.when(request.getHeader("Time-Zone")).thenReturn("Invalid/TimeZone");
+
         ZoneId result = CommonUtils.resolveTimeZone(request);
-        
+
         Assertions.assertNotNull(result);
         Assertions.assertEquals("UTC", result.getId());
     }
 
     @Test
-    void testResolveTimeZone_WithNoTimeZoneHeader() {
+    void resolveTimeZone_WithEmptyTimeZoneHeader_ShouldReturnDefaultZoneId() {
+        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        Mockito.when(request.getHeader("Time-Zone")).thenReturn("");
+
+        ZoneId result = CommonUtils.resolveTimeZone(request);
+
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals("UTC", result.getId());
+    }
+
+    @Test
+    void resolveTimeZone_WithNullTimeZoneHeader_ShouldReturnDefaultZoneId() {
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
         Mockito.when(request.getHeader("Time-Zone")).thenReturn(null);
-        
+
         ZoneId result = CommonUtils.resolveTimeZone(request);
-        
+
         Assertions.assertNotNull(result);
         Assertions.assertEquals("UTC", result.getId());
     }
 
     @Test
-    void testRound() {
-        Double number = 123.456789;
-        Double result = CommonUtils.round(number, 2);
-        
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(123.46, result);
+    void round_WithPositiveNumberAndDecimalPlaces_ShouldReturnRoundedValue() {
+        Double result = CommonUtils.round(2.34567, 2);
+        Assertions.assertEquals(2.35, result);
     }
 
     @Test
-    void testRound_WithNegativeDecimalPlaces() {
-        Double number = 123.456789;
-        Double result = CommonUtils.round(number, -1);
-        
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals(120.0, result);
+    void round_WithNegativeNumberAndDecimalPlaces_ShouldReturnRoundedValue() {
+        Double result = CommonUtils.round(-2.34567, 2);
+        Assertions.assertEquals(-2.35, result);
     }
 
     @Test
-    void testFormatMillisToHHmm() {
-        String result = CommonUtils.formatMillisToHHmm(3661000);
-        
-        Assertions.assertEquals("01:01", result);
+    void round_WithZero_ShouldReturnZero() {
+        Double result = CommonUtils.round(0.0, 2);
+        Assertions.assertEquals(0.0, result);
     }
 
     @Test
-    void testFormatMillisToHHmm_WithZeroMillis() {
+    void formatMillisToHHmm_WithValidMillis_ShouldReturnFormattedTime() {
+        String result = CommonUtils.formatMillisToHHmm(7500000);
+        Assertions.assertEquals("02:05", result);
+    }
+
+    @Test
+    void formatMillisToHHmm_WithZeroMillis_ShouldReturn00Time() {
         String result = CommonUtils.formatMillisToHHmm(0);
-        
         Assertions.assertEquals("00:00", result);
     }
 
     @Test
-    void testFormatMillisToHHmm_WithNegativeMillis() {
-        String result = CommonUtils.formatMillisToHHmm(-60000);
-        
+    void formatMillisToHHmm_WithNegativeMillis_ShouldReturnFormattedNegativeTime() {
+        String result = CommonUtils.formatMillisToHHmm(-3600000);
         Assertions.assertEquals("00:00", result);
     }
 }

@@ -1,4 +1,5 @@
 package com.carbo.activitylog.services;
+import static org.mockito.ArgumentMatchers.any;
 
 import com.carbo.activitylog.model.*;
 import com.carbo.activitylog.model.Job;
@@ -58,7 +59,7 @@ class JobCompletionDashboardServiceTest {
 
     @Mock
     private ActivityLogMongoDbRepository activityLogMongoDbRepository;
-    
+
     @Mock
     private JobMongoDbRepository jobMongoDbRepository;
 
@@ -72,118 +73,119 @@ class JobCompletionDashboardServiceTest {
     private JobCompletionDashboardService jobCompletionDashboardService;
 
     private Job job;
-    private String jobId = "job123";
-    private String orgId = "org123";
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         job = new Job();
-        job.setId(jobId);
-        job.setOrganizationId(orgId);
+        job.setId("jobId");
+        job.setOrganizationId("orgId");
         job.setTargetStagesPerDay(5);
         job.setStartDate(System.currentTimeMillis());
     }
 
     @Test
     void getPadSummary_HappyPath() {
-        when(jobMongoDbRepository.findByIdAndOrganizationId(jobId, orgId)).thenReturn(Optional.of(job));
-        when(activityLogMongoDbRepository.findByOrganizationIdAndJobId(orgId, jobId)).thenReturn(Collections.emptyList());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.of(job));
+        when(activityLogMongoDbRepository.findByOrganizationIdAndJobId(any(), any())).thenReturn(Collections.emptyList());
 
-        PadActivitySummary result = jobCompletionDashboardService.getPadSummary(request, jobId);
-        
+        PadActivitySummary result = jobCompletionDashboardService.getPadSummary(request, "jobId");
+
         assertNotNull(result);
+        assertEquals(0, result.getPadActivityBreakdown().getTotalActivityhours());
     }
 
     @Test
     void getPadSummary_JobNotFound() {
-        when(jobMongoDbRepository.findByIdAndOrganizationId(jobId, orgId)).thenReturn(Optional.empty());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.empty());
 
-        PadActivitySummary result = jobCompletionDashboardService.getPadSummary(request, jobId);
-        
+        PadActivitySummary result = jobCompletionDashboardService.getPadSummary(request, "jobId");
+
         assertNotNull(result);
+        assertEquals(0, result.getPadActivityBreakdown().getTotalActivityhours());
     }
 
     @Test
     void getStagesPerDay_HappyPath() {
-        when(jobMongoDbRepository.findByIdAndOrganizationId(jobId, orgId)).thenReturn(Optional.of(job));
-        when(activityLogMongoDbRepository.findByOrganizationIdAndJobId(orgId, jobId)).thenReturn(Collections.emptyList());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.of(job));
+        when(activityLogMongoDbRepository.findByOrganizationIdAndJobId(any(), any())).thenReturn(Collections.emptyList());
 
-        List<StagePerDay> result = jobCompletionDashboardService.getStagesPerDay(request, jobId);
+        List<StagePerDay> result = jobCompletionDashboardService.getStagesPerDay(request, "jobId");
 
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void getStagesPerDay_JobNotFound() {
-        when(jobMongoDbRepository.findByIdAndOrganizationId(jobId, orgId)).thenReturn(Optional.empty());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.empty());
 
-        List<StagePerDay> result = jobCompletionDashboardService.getStagesPerDay(request, jobId);
+        List<StagePerDay> result = jobCompletionDashboardService.getStagesPerDay(request, "jobId");
 
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void getPumpHoursPerDay_HappyPath() {
-        when(jobMongoDbRepository.findByIdAndOrganizationId(jobId, orgId)).thenReturn(Optional.of(job));
-        when(activityLogMongoDbRepository.findByOrganizationIdAndJobId(orgId, jobId)).thenReturn(Collections.emptyList());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.of(job));
+        when(activityLogMongoDbRepository.findByOrganizationIdAndJobId(any(), any())).thenReturn(Collections.emptyList());
 
-        List<PumpHoursPerDay> result = jobCompletionDashboardService.getPumpHoursPerDay(request, jobId);
+        List<PumpHoursPerDay> result = jobCompletionDashboardService.getPumpHoursPerDay(request, "jobId");
 
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void getPumpHoursPerDay_JobNotFound() {
-        when(jobMongoDbRepository.findByIdAndOrganizationId(jobId, orgId)).thenReturn(Optional.empty());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.empty());
 
-        List<PumpHoursPerDay> result = jobCompletionDashboardService.getPumpHoursPerDay(request, jobId);
+        List<PumpHoursPerDay> result = jobCompletionDashboardService.getPumpHoursPerDay(request, "jobId");
 
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void getPumpHoursPerStageFromLogs_HappyPath() {
-        String wellName = "well1";
-        when(jobMongoDbRepository.findByIdAndOrganizationId(jobId, orgId)).thenReturn(Optional.of(job));
-        when(activityLogMongoDbRepository.findByOrganizationIdAndJobIdAndWell(orgId, jobId, wellName)).thenReturn(Collections.emptyList());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.of(job));
+        when(activityLogMongoDbRepository.findByOrganizationIdAndJobIdAndWell(any(), any(), any())).thenReturn(Collections.emptyList());
 
-        List<PumpHoursPerStage> result = jobCompletionDashboardService.getPumpHoursPerStageFromLogs(request, jobId, wellName);
+        List<PumpHoursPerStage> result = jobCompletionDashboardService.getPumpHoursPerStageFromLogs(request, "jobId", "wellName");
 
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void getPumpHoursPerStageFromLogs_JobNotFound() {
-        String wellName = "well1";
-        when(jobMongoDbRepository.findByIdAndOrganizationId(jobId, orgId)).thenReturn(Optional.empty());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.empty());
 
-        List<PumpHoursPerStage> result = jobCompletionDashboardService.getPumpHoursPerStageFromLogs(request, jobId, wellName);
+        List<PumpHoursPerStage> result = jobCompletionDashboardService.getPumpHoursPerStageFromLogs(request, "jobId", "wellName");
 
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void getServiceOrganization_HappyPath() {
-        when(jobMongoDbRepository.findByIdAndSharedWithOrganizationId(jobId, orgId)).thenReturn(Optional.of(job));
-        when(organizationMongoDbRepository.findById(orgId)).thenReturn(Optional.of(new Organization())); // Mock Organization
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.of(job));
+        when(organizationMongoDbRepository.findById(any())).thenReturn(Optional.of(new Organization()));
 
-        ServiceOrganizationDetails result = jobCompletionDashboardService.getServiceOrganization(request, jobId);
+        ServiceOrganizationDetails result = jobCompletionDashboardService.getServiceOrganization(request, "jobId");
 
         assertNotNull(result);
+        assertEquals("orgId", result.getOrganizationId());
     }
 
     @Test
     void getServiceOrganization_JobNotFound() {
-        when(jobMongoDbRepository.findByIdAndSharedWithOrganizationId(jobId, orgId)).thenReturn(Optional.empty());
+        when(jobMongoDbRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.empty());
 
-        ServiceOrganizationDetails result = jobCompletionDashboardService.getServiceOrganization(request, jobId);
+        ServiceOrganizationDetails result = jobCompletionDashboardService.getServiceOrganization(request, "jobId");
 
         assertNotNull(result);
+        assertEquals(null, result.getOrganizationId());
     }
 }

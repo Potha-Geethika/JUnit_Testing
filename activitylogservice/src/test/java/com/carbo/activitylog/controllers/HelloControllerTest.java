@@ -41,15 +41,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @WebMvcTest(HelloController.class)
-class HelloControllerTest {
+public class HelloControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Test
-    void whenIndexIsCalled_thenReturns200() throws Exception {
+    @DisplayName("Should return 200 OK with greeting message")
+    public void index_shouldReturn200() throws Exception {
         mockMvc.perform(get("/")
-                .accept(MediaType.TEXT_HTML))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Greetings from Spring Boot!"));
     }

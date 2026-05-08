@@ -51,46 +51,52 @@ class OrganizationServiceTest {
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         organizationService = new OrganizationService(organizationRepository);
     }
 
     @Test
     void testGetAll_HappyPath() {
-        Organization organization = new Organization();
-        organization.setId("1");
-        organization.setName("Test Org");
+        Organization org1 = new Organization();
+        org1.setId("1");
+        org1.setName("Org1");
         
-        when(organizationRepository.findAll()).thenReturn(Collections.singletonList(organization));
+        Organization org2 = new Organization();
+        org2.setId("2");
+        org2.setName("Org2");
 
-        List<Organization> result = organizationService.getAll();
+        when(organizationRepository.findAll()).thenReturn(List.of(org1, org2));
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("Test Org", result.get(0).getName());
+        List<Organization> organizations = organizationService.getAll();
+
+        assertNotNull(organizations);
+        assertEquals(2, organizations.size());
+        assertEquals("Org1", organizations.get(0).getName());
+        assertEquals("Org2", organizations.get(1).getName());
     }
 
     @Test
     void testGetAll_EmptyList() {
         when(organizationRepository.findAll()).thenReturn(Collections.emptyList());
 
-        List<Organization> result = organizationService.getAll();
+        List<Organization> organizations = organizationService.getAll();
 
-        assertNotNull(result);
-        assertEquals(0, result.size());
+        assertNotNull(organizations);
+        assertEquals(0, organizations.size());
     }
 
     @Test
     void testGet_HappyPath() {
-        Organization organization = new Organization();
-        organization.setId("1");
-        organization.setName("Test Org");
+        Organization org = new Organization();
+        org.setId("1");
+        org.setName("Org1");
 
-        when(organizationRepository.findById("1")).thenReturn(Optional.of(organization));
+        when(organizationRepository.findById("1")).thenReturn(Optional.of(org));
 
         Optional<Organization> result = organizationService.get("1");
 
-        assertTrue(result.isPresent());
-        assertEquals("Test Org", result.get().getName());
+        assertNotNull(result);
+        assertEquals("Org1", result.get().getName());
     }
 
     @Test
@@ -99,34 +105,35 @@ class OrganizationServiceTest {
 
         Optional<Organization> result = organizationService.get("1");
 
-        assertFalse(result.isPresent());
+        assertNotNull(result);
+        assertEquals(Optional.empty(), result);
     }
 
     @Test
     void testSave_HappyPath() {
-        Organization organization = new Organization();
-        organization.setId("1");
-        organization.setName("Test Org");
+        Organization org = new Organization();
+        org.setId("1");
+        org.setName("Org1");
 
-        when(organizationRepository.save(organization)).thenReturn(organization);
+        when(organizationRepository.save(org)).thenReturn(org);
 
-        Organization result = organizationService.save(organization);
+        Organization result = organizationService.save(org);
 
         assertNotNull(result);
-        assertEquals("Test Org", result.getName());
+        assertEquals("Org1", result.getName());
     }
 
     @Test
     void testUpdate_HappyPath() {
-        Organization organization = new Organization();
-        organization.setId("1");
-        organization.setName("Updated Org");
+        Organization org = new Organization();
+        org.setId("1");
+        org.setName("Updated Org");
 
-        when(organizationRepository.save(organization)).thenReturn(organization);
+        when(organizationRepository.save(org)).thenReturn(org);
 
-        organizationService.update(organization);
+        organizationService.update(org);
 
-        verify(organizationRepository, times(1)).save(organization);
+        verify(organizationRepository, times(1)).save(org);
     }
 
     @Test

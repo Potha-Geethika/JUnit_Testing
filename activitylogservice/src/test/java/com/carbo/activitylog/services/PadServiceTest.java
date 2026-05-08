@@ -47,58 +47,56 @@ class PadServiceTest {
     @Mock
     private PadMongoDbRepository padRepository;
 
+    @InjectMocks
     private PadService padService;
+
+    private Pad pad;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        padService = new PadService(padRepository);
+        pad = new Pad();
+        pad.setId("1");
+        pad.setName("Test Pad");
+        pad.setOperatorId("operator1");
+        pad.setOrganizationId("org1");
     }
 
     @Test
     void testGetAll() {
-        List<Pad> expectedPads = Collections.emptyList();
-        doReturn(expectedPads).when(padRepository).findAll();
+        List<Pad> expectedList = Collections.singletonList(pad);
+        doReturn(expectedList).when(padRepository).findAll();
 
         List<Pad> result = padService.getAll();
-
         assertNotNull(result);
-        assertEquals(expectedPads, result);
+        assertEquals(1, result.size());
+        assertEquals(expectedList.get(0).getId(), result.get(0).getId());
     }
 
     @Test
     void testGetByOrganizationId() {
-        String organizationId = "org-001";
-        List<Pad> expectedPads = Collections.singletonList(new Pad());
-        doReturn(expectedPads).when(padRepository).findByOrganizationId(organizationId);
+        List<Pad> expectedList = Collections.singletonList(pad);
+        doReturn(expectedList).when(padRepository).findByOrganizationId("org1");
 
-        List<Pad> result = padService.getByOrganizationId(organizationId);
-
+        List<Pad> result = padService.getByOrganizationId("org1");
         assertNotNull(result);
-        assertEquals(expectedPads, result);
+        assertEquals(1, result.size());
+        assertEquals(expectedList.get(0).getId(), result.get(0).getId());
     }
 
     @Test
     void testGetByName() {
-        String organizationId = "org-001";
-        String name = "pad-name";
-        Pad expectedPad = new Pad();
-        doReturn(Optional.of(expectedPad)).when(padRepository).findDistinctByOrganizationIdAndName(organizationId, name);
+        doReturn(Optional.of(pad)).when(padRepository).findDistinctByOrganizationIdAndName("org1", "Test Pad");
 
-        Optional<Pad> result = padService.getByName(organizationId, name);
-
+        Optional<Pad> result = padService.getByName("org1", "Test Pad");
         assertNotNull(result);
-        assertEquals(expectedPad, result.get());
+        assertEquals(pad.getId(), result.get().getId());
     }
 
     @Test
     void testGetByName_NotFound() {
-        String organizationId = "org-001";
-        String name = "non-existent-pad";
-        doReturn(Optional.empty()).when(padRepository).findDistinctByOrganizationIdAndName(organizationId, name);
+        doReturn(Optional.empty()).when(padRepository).findDistinctByOrganizationIdAndName("org1", "Nonexistent Pad");
 
-        Optional<Pad> result = padService.getByName(organizationId, name);
-
+        Optional<Pad> result = padService.getByName("org1", "Nonexistent Pad");
         assertNotNull(result);
         assertEquals(Optional.empty(), result);
     }

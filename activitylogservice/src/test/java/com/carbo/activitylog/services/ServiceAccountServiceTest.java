@@ -56,90 +56,89 @@ class ServiceAccountServiceTest {
     void setUp() {
         serviceAccount = new ServiceAccount();
         serviceAccount.setId("1");
-        serviceAccount.setOrganizationId("org1");
+        serviceAccount.setOrganizationId("org-1");
     }
 
     @Test
-    void testGetAll() {
-        when(serviceAccountMongoDbRepository.findAll()).thenReturn(Collections.singletonList(serviceAccount));
+    void getAll_HappyPath() {
+        List<ServiceAccount> expectedList = Collections.singletonList(serviceAccount);
+        when(serviceAccountMongoDbRepository.findAll()).thenReturn(expectedList);
 
         List<ServiceAccount> result = serviceAccountService.getAll();
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(serviceAccount, result.get(0));
+        assertEquals(expectedList, result);
     }
 
     @Test
-    void testGetByOrganizationId() {
-        when(serviceAccountMongoDbRepository.findByOrganizationId("org1")).thenReturn(Collections.singletonList(serviceAccount));
+    void getByOrganizationId_HappyPath() {
+        List<ServiceAccount> expectedList = Collections.singletonList(serviceAccount);
+        when(serviceAccountMongoDbRepository.findByOrganizationId("org-1")).thenReturn(expectedList);
 
-        List<ServiceAccount> result = serviceAccountService.getByOrganizationId("org1");
+        List<ServiceAccount> result = serviceAccountService.getByOrganizationId("org-1");
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(serviceAccount, result.get(0));
+        assertEquals(expectedList, result);
     }
 
     @Test
-    void testGet() {
+    void getByOrganizationId_EmptyList() {
+        when(serviceAccountMongoDbRepository.findByOrganizationId("org-2")).thenReturn(Collections.emptyList());
+
+        List<ServiceAccount> result = serviceAccountService.getByOrganizationId("org-2");
+
+        assertEquals(Collections.emptyList(), result);
+    }
+
+    @Test
+    void get_HappyPath() {
         when(serviceAccountMongoDbRepository.findById("1")).thenReturn(Optional.of(serviceAccount));
 
         Optional<ServiceAccount> result = serviceAccountService.get("1");
 
-        assertNotNull(result);
-        assertEquals(serviceAccount, result.get());
+        assertEquals(Optional.of(serviceAccount), result);
     }
 
     @Test
-    void testSave() {
+    void get_NotFound() {
+        when(serviceAccountMongoDbRepository.findById("2")).thenReturn(Optional.empty());
+
+        Optional<ServiceAccount> result = serviceAccountService.get("2");
+
+        assertEquals(Optional.empty(), result);
+    }
+
+    @Test
+    void save_HappyPath() {
         when(serviceAccountMongoDbRepository.save(serviceAccount)).thenReturn(serviceAccount);
 
         ServiceAccount result = serviceAccountService.save(serviceAccount);
 
-        assertNotNull(result);
         assertEquals(serviceAccount, result);
     }
 
     @Test
-    void testUpdate() {
+    void update_HappyPath() {
+        doNothing().when(serviceAccountMongoDbRepository).save(serviceAccount);
+
         serviceAccountService.update(serviceAccount);
+
         verify(serviceAccountMongoDbRepository, times(1)).save(serviceAccount);
     }
 
     @Test
-    void testDelete() {
+    void delete_HappyPath() {
+        doNothing().when(serviceAccountMongoDbRepository).deleteById("1");
+
         serviceAccountService.delete("1");
+
         verify(serviceAccountMongoDbRepository, times(1)).deleteById("1");
     }
 
     @Test
-    void testGetAllEmpty() {
-        when(serviceAccountMongoDbRepository.findAll()).thenReturn(Collections.emptyList());
+    void delete_NotFound() {
+        doThrow(new RuntimeException()).when(serviceAccountMongoDbRepository).deleteById("2");
 
-        List<ServiceAccount> result = serviceAccountService.getAll();
+        serviceAccountService.delete("2");
 
-        assertNotNull(result);
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    void testGetByOrganizationIdEmpty() {
-        when(serviceAccountMongoDbRepository.findByOrganizationId("unknown")).thenReturn(Collections.emptyList());
-
-        List<ServiceAccount> result = serviceAccountService.getByOrganizationId("unknown");
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    void testGetNotFound() {
-        when(serviceAccountMongoDbRepository.findById("unknown")).thenReturn(Optional.empty());
-
-        Optional<ServiceAccount> result = serviceAccountService.get("unknown");
-
-        assertNotNull(result);
-        assertEquals(Optional.empty(), result);
+        verify(serviceAccountMongoDbRepository, times(1)).deleteById("2");
     }
 }

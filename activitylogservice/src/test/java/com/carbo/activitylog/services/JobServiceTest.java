@@ -51,23 +51,27 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         jobService = new JobService(jobMongoDbRepository);
     }
 
     @Test
     void testGetByOrganizationId_HappyPath() {
-        String organizationId = "org-123";
-        List<Job> expectedJobs = Collections.singletonList(new Job());
-        when(jobMongoDbRepository.findByOrganizationId(organizationId)).thenReturn(expectedJobs);
+        String organizationId = "org1";
+        Job job = new Job();
+        job.setId("1");
+        job.setOrganizationId(organizationId);
+        when(jobMongoDbRepository.findByOrganizationId(organizationId)).thenReturn(Collections.singletonList(job));
 
         List<Job> result = jobService.getByOrganizationId(organizationId);
         assertNotNull(result);
         assertEquals(1, result.size());
+        assertEquals("1", result.get(0).getId());
     }
 
     @Test
     void testGetByOrganizationId_EmptyList() {
-        String organizationId = "org-123";
+        String organizationId = "org2";
         when(jobMongoDbRepository.findByOrganizationId(organizationId)).thenReturn(Collections.emptyList());
 
         List<Job> result = jobService.getByOrganizationId(organizationId);
@@ -77,21 +81,22 @@ class JobServiceTest {
 
     @Test
     void testGetByOrganizationIdAndJobId_HappyPath() {
-        String organizationId = "org-123";
-        String jobId = "job-456";
-        Job expectedJob = new Job();
-        expectedJob.setId(jobId);
-        when(jobMongoDbRepository.findByOrganizationIdAndId(organizationId, jobId)).thenReturn(Collections.singletonList(expectedJob));
+        String organizationId = "org1";
+        String jobId = "1";
+        Job job = new Job();
+        job.setId(jobId);
+        job.setOrganizationId(organizationId);
+        when(jobMongoDbRepository.findByOrganizationIdAndId(organizationId, jobId)).thenReturn(Collections.singletonList(job));
 
         Optional<Job> result = jobService.getByOrganizationIdAndJobId(organizationId, jobId);
         assertNotNull(result);
-        assertEquals(expectedJob.getId(), result.get().getId());
+        assertEquals(jobId, result.get().getId());
     }
 
     @Test
-    void testGetByOrganizationIdAndJobId_JobNotFound() {
-        String organizationId = "org-123";
-        String jobId = "job-456";
+    void testGetByOrganizationIdAndJobId_EmptyOptional() {
+        String organizationId = "org1";
+        String jobId = "2";
         when(jobMongoDbRepository.findByOrganizationIdAndId(organizationId, jobId)).thenReturn(Collections.emptyList());
 
         Optional<Job> result = jobService.getByOrganizationIdAndJobId(organizationId, jobId);
@@ -101,18 +106,20 @@ class JobServiceTest {
 
     @Test
     void testGetJobByJobNumber_HappyPath() {
-        String jobNumber = "job-789";
-        List<Job> expectedJobs = Collections.singletonList(new Job());
-        when(jobMongoDbRepository.findByJobNumber(jobNumber)).thenReturn(expectedJobs);
+        String jobNumber = "job1";
+        Job job = new Job();
+        job.setJobNumber(jobNumber);
+        when(jobMongoDbRepository.findByJobNumber(jobNumber)).thenReturn(Collections.singletonList(job));
 
         List<Job> result = jobService.getJobByJobNumber(jobNumber);
         assertNotNull(result);
         assertEquals(1, result.size());
+        assertEquals(jobNumber, result.get(0).getJobNumber());
     }
 
     @Test
     void testGetJobByJobNumber_EmptyList() {
-        String jobNumber = "job-789";
+        String jobNumber = "job2";
         when(jobMongoDbRepository.findByJobNumber(jobNumber)).thenReturn(Collections.emptyList());
 
         List<Job> result = jobService.getJobByJobNumber(jobNumber);
@@ -122,19 +129,19 @@ class JobServiceTest {
 
     @Test
     void testFindByJobId_HappyPath() {
-        String jobId = "job-456";
-        Job expectedJob = new Job();
-        expectedJob.setId(jobId);
-        when(jobMongoDbRepository.findById(jobId)).thenReturn(Optional.of(expectedJob));
+        String jobId = "1";
+        Job job = new Job();
+        job.setId(jobId);
+        when(jobMongoDbRepository.findById(jobId)).thenReturn(Optional.of(job));
 
         Optional<Job> result = jobService.findByJobId(jobId);
         assertNotNull(result);
-        assertEquals(expectedJob.getId(), result.get().getId());
+        assertEquals(jobId, result.get().getId());
     }
 
     @Test
-    void testFindByJobId_JobNotFound() {
-        String jobId = "job-456";
+    void testFindByJobId_EmptyOptional() {
+        String jobId = "2";
         when(jobMongoDbRepository.findById(jobId)).thenReturn(Optional.empty());
 
         Optional<Job> result = jobService.findByJobId(jobId);

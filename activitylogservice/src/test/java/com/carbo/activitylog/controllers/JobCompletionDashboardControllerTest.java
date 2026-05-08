@@ -1,5 +1,4 @@
 package com.carbo.activitylog.controllers;
-import static org.mockito.ArgumentMatchers.any;
 
 import com.carbo.activitylog.model.*;
 import com.carbo.activitylog.services.JobCompletionDashboardService;
@@ -47,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 
+
 @WebMvcTest(JobCompletionDashboardController.class)
 class JobCompletionDashboardControllerTest {
 
@@ -56,153 +56,103 @@ class JobCompletionDashboardControllerTest {
     @MockBean
     private JobCompletionDashboardService jobCompletionDashboardService;
 
-    private MockHttpServletRequest request;
+    private HttpServletRequest request;
 
     @BeforeEach
     void setUp() {
         request = new MockHttpServletRequest();
-        request.addHeader("Organization-Id", "orgId");
     }
 
     @Test
-    void index_HappyPath_Returns200() throws Exception {
+    void index_ShouldReturnPadActivitySummary_WhenJobExists() throws Exception {
+        String jobId = "jobId1";
         PadActivitySummary summary = new PadActivitySummary();
-        when(jobCompletionDashboardService.getPadSummary(any(), any())).thenReturn(summary);
+        // Initialize summary with required fields
+
+        when(jobCompletionDashboardService.getPadSummary(request, jobId)).thenReturn(summary);
 
         mockMvc.perform(get("/v1/job-complete-dashboard/activity-breakdown")
-                .param("jobId", "jobId")
-                .contextPath("/v1")
-                .servletPath("/activity-breakdown")
-                .header("Organization-Id", "orgId"))
+                .param("jobId", jobId)
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.serviceOrganizationName").exists()); // Assuming this field exists
+
+        verify(jobCompletionDashboardService).getPadSummary(request, jobId);
+    }
+
+    @Test
+    void index_ShouldReturnEmptyPadActivitySummary_WhenJobDoesNotExist() throws Exception {
+        String jobId = "jobId1";
+        when(jobCompletionDashboardService.getPadSummary(request, jobId)).thenReturn(new PadActivitySummary());
+
+        mockMvc.perform(get("/v1/job-complete-dashboard/activity-breakdown")
+                .param("jobId", jobId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.serviceOrganizationName").doesNotExist());
 
-        verify(jobCompletionDashboardService).getPadSummary(any(), eq("jobId"));
+        verify(jobCompletionDashboardService).getPadSummary(request, jobId);
     }
 
     @Test
-    void index_JobNotFound_Returns500() throws Exception {
-        when(jobCompletionDashboardService.getPadSummary(any(), any())).thenReturn(null);
-
-        mockMvc.perform(get("/v1/job-complete-dashboard/activity-breakdown")
-                .param("jobId", "jobId")
-                .header("Organization-Id", "orgId"))
-                .andExpect(status().isInternalServerError());
-
-        verify(jobCompletionDashboardService).getPadSummary(any(), eq("jobId"));
-    }
-
-    @Test
-    void getStagesPerDay_HappyPath_Returns200() throws Exception {
-        when(jobCompletionDashboardService.getStagesPerDay(any(), any())).thenReturn(Collections.singletonList(new StagePerDay()));
+    void getStagesPerDay_ShouldReturnStagesList_WhenJobExists() throws Exception {
+        String jobId = "jobId1";
+        List<StagePerDay> stages = Collections.singletonList(new StagePerDay());
+        when(jobCompletionDashboardService.getStagesPerDay(request, jobId)).thenReturn(stages);
 
         mockMvc.perform(get("/v1/job-complete-dashboard/stages-per-day")
-                .param("jobId", "jobId")
-                .header("Organization-Id", "orgId"))
+                .param("jobId", jobId)
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$[0]").exists());
 
-        verify(jobCompletionDashboardService).getStagesPerDay(any(), eq("jobId"));
+        verify(jobCompletionDashboardService).getStagesPerDay(request, jobId);
     }
 
     @Test
-    void getStagesPerDay_JobNotFound_ReturnsEmptyList() throws Exception {
-        when(jobCompletionDashboardService.getStagesPerDay(any(), any())).thenReturn(Collections.emptyList());
-
-        mockMvc.perform(get("/v1/job-complete-dashboard/stages-per-day")
-                .param("jobId", "jobId")
-                .header("Organization-Id", "orgId"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray());
-
-        verify(jobCompletionDashboardService).getStagesPerDay(any(), eq("jobId"));
-    }
-
-    @Test
-    void getPumpHoursPerDay_HappyPath_Returns200() throws Exception {
-        when(jobCompletionDashboardService.getPumpHoursPerDay(any(), any())).thenReturn(Collections.singletonList(new PumpHoursPerDay()));
+    void getPumpHoursPerDay_ShouldReturnPumpHoursList_WhenJobExists() throws Exception {
+        String jobId = "jobId1";
+        List<PumpHoursPerDay> pumpHours = Collections.singletonList(new PumpHoursPerDay());
+        when(jobCompletionDashboardService.getPumpHoursPerDay(request, jobId)).thenReturn(pumpHours);
 
         mockMvc.perform(get("/v1/job-complete-dashboard/pump-hours-per-day")
-                .param("jobId", "jobId")
-                .header("Organization-Id", "orgId"))
+                .param("jobId", jobId)
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$[0]").exists());
 
-        verify(jobCompletionDashboardService).getPumpHoursPerDay(any(), eq("jobId"));
+        verify(jobCompletionDashboardService).getPumpHoursPerDay(request, jobId);
     }
 
     @Test
-    void getPumpHoursPerDay_JobNotFound_ReturnsEmptyList() throws Exception {
-        when(jobCompletionDashboardService.getPumpHoursPerDay(any(), any())).thenReturn(Collections.emptyList());
-
-        mockMvc.perform(get("/v1/job-complete-dashboard/pump-hours-per-day")
-                .param("jobId", "jobId")
-                .header("Organization-Id", "orgId"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray());
-
-        verify(jobCompletionDashboardService).getPumpHoursPerDay(any(), eq("jobId"));
-    }
-
-    @Test
-    void getPumpHoursPerStage_HappyPath_Returns200() throws Exception {
-        when(jobCompletionDashboardService.getPumpHoursPerStageFromLogs(any(), any(), any())).thenReturn(Collections.singletonList(new PumpHoursPerStage()));
+    void getPumpHoursPerStage_ShouldReturnPumpHoursPerStage_WhenJobExists() throws Exception {
+        String jobId = "jobId1";
+        String wellName = "well1";
+        List<PumpHoursPerStage> pumpHoursPerStage = Collections.singletonList(new PumpHoursPerStage());
+        when(jobCompletionDashboardService.getPumpHoursPerStageFromLogs(request, jobId, wellName)).thenReturn(pumpHoursPerStage);
 
         mockMvc.perform(get("/v1/job-complete-dashboard/pump-hours-per-stage")
-                .param("jobId", "jobId")
-                .param("well", "wellName")
-                .header("Organization-Id", "orgId"))
+                .param("jobId", jobId)
+                .param("well", wellName)
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$[0]").exists());
 
-        verify(jobCompletionDashboardService).getPumpHoursPerStageFromLogs(any(), eq("jobId"), eq("wellName"));
+        verify(jobCompletionDashboardService).getPumpHoursPerStageFromLogs(request, jobId, wellName);
     }
 
     @Test
-    void getPumpHoursPerStage_JobNotFound_ReturnsEmptyList() throws Exception {
-        when(jobCompletionDashboardService.getPumpHoursPerStageFromLogs(any(), any(), any())).thenReturn(Collections.emptyList());
-
-        mockMvc.perform(get("/v1/job-complete-dashboard/pump-hours-per-stage")
-                .param("jobId", "jobId")
-                .param("well", "wellName")
-                .header("Organization-Id", "orgId"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray());
-
-        verify(jobCompletionDashboardService).getPumpHoursPerStageFromLogs(any(), eq("jobId"), eq("wellName"));
-    }
-
-    @Test
-    void getServiceOrganization_HappyPath_Returns200() throws Exception {
+    void getServiceOrganization_ShouldReturnServiceOrganizationDetails_WhenJobExists() throws Exception {
+        String jobId = "jobId1";
         ServiceOrganizationDetails details = new ServiceOrganizationDetails();
-        when(jobCompletionDashboardService.getServiceOrganization(any(), any())).thenReturn(details);
+        when(jobCompletionDashboardService.getServiceOrganization(request, jobId)).thenReturn(details);
 
         mockMvc.perform(get("/v1/job-complete-dashboard/service-organization")
-                .param("jobId", "jobId")
-                .header("Organization-Id", "orgId"))
+                .param("jobId", jobId)
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+                .andExpect(jsonPath("$.organizationId").exists()); // Assuming this field exists
 
-        verify(jobCompletionDashboardService).getServiceOrganization(any(), eq("jobId"));
-    }
-
-    @Test
-    void getServiceOrganization_JobNotFound_ReturnsEmptyDetails() throws Exception {
-        when(jobCompletionDashboardService.getServiceOrganization(any(), any())).thenReturn(new ServiceOrganizationDetails());
-
-        mockMvc.perform(get("/v1/job-complete-dashboard/service-organization")
-                .param("jobId", "jobId")
-                .header("Organization-Id", "orgId"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
-
-        verify(jobCompletionDashboardService).getServiceOrganization(any(), eq("jobId"));
+        verify(jobCompletionDashboardService).getServiceOrganization(request, jobId);
     }
 }

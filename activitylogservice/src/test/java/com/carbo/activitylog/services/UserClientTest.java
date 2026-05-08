@@ -1,4 +1,5 @@
 package com.carbo.activitylog.services;
+import static org.mockito.ArgumentMatchers.any;
 
 import java.io.*;
 import java.nio.file.*;
@@ -50,86 +51,72 @@ class UserClientTest {
     @Mock
     private RestTemplate restTemplate;
 
-    @Value("${security.oauth2.resource.userInfoUri}")
-    private String USER_API_URL = "http://localhost:8080/userinfo";
-
     @InjectMocks
     private UserClient userClient;
 
+    private String accessToken;
+    private String userApiUrl;
+    private Map<String, Object> expectedResponse;
+
     @BeforeEach
-    void setup() {
-        // No additional setup needed, as we are using mocks
+    void setUp() {
+        accessToken = "test-access-token";
+        userApiUrl = "http://localhost:8080/userinfo";
+        expectedResponse = Map.of("key", "value");
+        userClient = new UserClient();
+        userClient.USER_API_URL = userApiUrl;
     }
 
     @Test
-    void testGetUserInfo_Success() {
-        String accessToken = "test-token";
-        Map<String, Object> expectedResponse = Map.of("key", "value");
-
+    void getUserInfo_HappyPath() {
+        // Arrange
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+        ResponseEntity<Map> responseEntity = ResponseEntity.ok(expectedResponse);
 
-        ResponseEntity<Map> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+        when(restTemplate.exchange(
+                any(String.class),
+                any(HttpMethod.class),
+                any(HttpEntity.class),
+                any(Class.class))
+        ).thenReturn(responseEntity);
 
-        when(restTemplate.exchange(USER_API_URL, HttpMethod.GET, requestEntity, Map.class)).thenReturn(responseEntity);
-
+        // Act
         Map<String, Object> result = userClient.getUserInfo(accessToken);
-        
+
+        // Assert
         assertNotNull(result);
         assertEquals(expectedResponse, result);
     }
 
     @Test
-    void testGetUserInfo_NullAccessToken() {
-        String accessToken = null;
-        Map<String, Object> expectedResponse = Map.of("key", "value");
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-
-        ResponseEntity<Map> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
-
-        when(restTemplate.exchange(USER_API_URL, HttpMethod.GET, requestEntity, Map.class)).thenReturn(responseEntity);
-
-        Map<String, Object> result = userClient.getUserInfo(accessToken);
-        
-        assertNotNull(result);
-        assertEquals(expectedResponse, result);
+    void getUserInfo_NullAccessToken() {
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> userClient.getUserInfo(null));
     }
 
     @Test
-    void testGetUserInfo_EmptyAccessToken() {
-        String accessToken = "";
-        Map<String, Object> expectedResponse = Map.of("key", "value");
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-
-        ResponseEntity<Map> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
-
-        when(restTemplate.exchange(USER_API_URL, HttpMethod.GET, requestEntity, Map.class)).thenReturn(responseEntity);
-
-        Map<String, Object> result = userClient.getUserInfo(accessToken);
-        
-        assertNotNull(result);
-        assertEquals(expectedResponse, result);
+    void getUserInfo_EmptyAccessToken() {
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> userClient.getUserInfo(""));
     }
 
     @Test
-    void testGetUserInfo_ErrorHandling() {
-        String accessToken = "test-token";
-
+    void getUserInfo_ErrorHandling() {
+        // Arrange
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
 
-        when(restTemplate.exchange(USER_API_URL, HttpMethod.GET, requestEntity, Map.class))
-                .thenThrow(new RuntimeException("Error occurred"));
+        when(restTemplate.exchange(
+                any(String.class),
+                any(HttpMethod.class),
+                any(HttpEntity.class),
+                any(Class.class))
+        ).thenThrow(new RuntimeException("Service Unavailable"));
 
-        Exception exception = assertThrows(RuntimeException.class, () -> userClient.getUserInfo(accessToken));
-        assertEquals("Error occurred", exception.getMessage());
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> userClient.getUserInfo(accessToken));
     }
 }
